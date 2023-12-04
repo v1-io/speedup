@@ -4,16 +4,29 @@ import librosa
 import soundfile as sf
 from tqdm import tqdm
 from multiprocessing import Pool
+from pydub import AudioSegment
 
 def change_speed(input_file, output_file, speed=1.5):
     y, sr = librosa.load(input_file, sr=None)
     y_fast = librosa.effects.time_stretch(y, rate=speed)
-    sf.write(output_file, y_fast, sr)
+    
+    # Temporary WAV file path
+    temp_output = output_file.replace('.mp3', '.wav')
+    
+    # Save as WAV first
+    sf.write(temp_output, y_fast, sr)
+
+    # Convert WAV to MP3 using pydub
+    sound = AudioSegment.from_wav(temp_output)
+    sound.export(output_file, format="mp3")
+
+    # Remove temporary WAV file
+    os.remove(temp_output)
 
 def process_file(args):
     file_path, output_directory, speed = args
     filename = os.path.basename(file_path)
-    new_file_path = os.path.join(output_directory, os.path.splitext(filename)[0] + "_speedup.wav")
+    new_file_path = os.path.join(output_directory, os.path.splitext(filename)[0] + "_speedup.mp3")
     change_speed(file_path, new_file_path, speed)
     return file_path
 
